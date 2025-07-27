@@ -4,6 +4,8 @@ import cv2
 import math
 from ..models import FluxFillPipeline
 
+from diffusers.quantizers import PipelineQuantizationConfig
+
 
 def get_smooth_mask(general_mask, ksize=(120, 120)):
     r"""Generate a smooth mask from the general mask using morphological dilation.
@@ -42,8 +44,15 @@ def build_inpaint_model(model_path, lora_path, subfolder, device=0):
         pipe: The inpainting pipeline object.
     """
     # Initialize pipeline with bfloat16 precision for memory efficiency
+
+    quant_config = PipelineQuantizationConfig(
+        quant_backend="bitsandbytes_4bit",
+        quant_kwargs={"load_in_4bit": True, "bnb_4bit_compute_dtype": torch.bfloat16, "bnb_4bit_quant_type": "nf4"},
+        components_to_quantize=["transformer"]
+    )
+
     pipe = FluxFillPipeline.from_pretrained(
-        model_path, torch_dtype=torch.bfloat16).to(f"cuda:{device}")
+        model_path, quantization_config=quant_config, torch_dtype=torch.bfloat16).to(f"cuda:{device}")
     pipe.load_lora_weights(
         lora_path,
         subfolder=subfolder,

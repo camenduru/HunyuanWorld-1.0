@@ -27,6 +27,8 @@ from hy3dworld import Text2PanoramaPipelines
 from hy3dworld import Image2PanoramaPipelines
 from hy3dworld import Perspective
 
+from diffusers.quantizers import PipelineQuantizationConfig
+
 
 class Text2PanoramaDemo:
     def __init__(self):
@@ -48,8 +50,16 @@ class Text2PanoramaDemo:
         self.model_path = "black-forest-labs/FLUX.1-dev"
         # load the pipeline
         # use bfloat16 to save some VRAM
+
+        quant_config = PipelineQuantizationConfig(
+            quant_backend="bitsandbytes_4bit",
+            quant_kwargs={"load_in_4bit": True, "bnb_4bit_compute_dtype": torch.bfloat16, "bnb_4bit_quant_type": "nf4"},
+            components_to_quantize=["transformer"]
+        )
+
         self.pipe = Text2PanoramaPipelines.from_pretrained(
             self.model_path,
+            quantization_config=quant_config,
             torch_dtype=torch.bfloat16
         ).to("cuda")
         # and enable lora weights
@@ -110,8 +120,16 @@ class Image2PanoramaDemo:
         self.model_path = "black-forest-labs/FLUX.1-Fill-dev"
         # load the pipeline
         # use bfloat16 to save some VRAM
+
+        quant_config = PipelineQuantizationConfig(
+            quant_backend="bitsandbytes_4bit",
+            quant_kwargs={"load_in_4bit": True, "bnb_4bit_compute_dtype": torch.bfloat16, "bnb_4bit_quant_type": "nf4"},
+            components_to_quantize=["transformer"]
+        )
+
         self.pipe = Image2PanoramaPipelines.from_pretrained(
             self.model_path,
+            quantization_config=quant_config,
             torch_dtype=torch.bfloat16
         ).to("cuda")
         # and enable lora weights
